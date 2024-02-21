@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsightEDU - Compare School Performance</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding-top: 20px;
+        }
+
+        .container {
+            width: 80%;
+            margin: auto;
+        }
+
+        .section-title {
+            font-size: 24px;
+            color: #2575fc;
+            margin-bottom: 20px;
+        }
+
+        select, button {
+            padding: 10px;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: 1px solid #2575fc;
+            background-color: #fff;
+            color: #2575fc;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        select:hover, button:hover {
+            background-color: #2575fc;
+            color: #fff;
+        }
+
+        select:focus, button:focus {
+            outline: none;
+        }
+
+        #schoolDataChart {
+            max-width: 100%;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="section-title">Compare School Performance</h1>
+
+        <div class="form-group">
+            <label for="countySelect">Choose County:</label>
+            <select id="countySelect" class="form-control" onchange="populateDistricts()">
+                <option value="">Select a County</option>
+                <!-- Counties will be populated here -->
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="districtSelect">Choose District:</label>
+            <select id="districtSelect" class="form-control">
+                <option value="">Select a District</option>
+                <!-- Districts will be populated based on county selection -->
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="schoolTypeSelect">Choose School Type:</label>
+            <select id="schoolTypeSelect" class="form-control">
+                <option value="">Select a School Type</option>
+                <option value="elementary">Elementary School</option>
+                <option value="middle">Middle School</option>
+                <option value="high">High School</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="schoolNumberSelect">Choose School:</label>
+            <select id="schoolNumberSelect" class="form-control">
+                <option value="">Select a School</option>
+                <!-- School numbers will be populated here -->
+            </select>
+        </div>
+
+        <div>
+            <canvas id="schoolDataChart1"></canvas>
+        </div>
+        <div>
+            <canvas id="schoolDataChart2"></canvas>
+        </div>
+        
+        
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // JavaScript to populate counties and districts
+        // ... JavaScript code will be here ...
+        $(document).ready(function () {
+            // Populate counties on page load
+            $.getJSON('/get-counties/', function (data) {
+                data.forEach(function (county) {
+                    $('#countySelect').append(new Option(county, county));
+                });
+            });
+        });
+
+        function populateDistricts() {
+            var selectedCounty = $('#countySelect').val();
+            $('#districtSelect').empty().append(new Option('Select a District', ''));
+            if (selectedCounty) {
+                $.getJSON('/get-districts/' + selectedCounty + '/', function (data) {
+                    data.forEach(function (district) {
+                        $('#districtSelect').append(new Option(district, district));
+                    });
+                });
+            }
+        }
+
+        $('#schoolTypeSelect').change(function () {
+            var selectedSchoolType = $(this).val();
+            if (selectedSchoolType) {
+                $.getJSON('/get-school-ids/' + selectedSchoolType + '/', function (response) {
+                    // Do something with the school IDs
+                    console.log(response.school_ids); // Example: log to console
+                }).fail(function () {
+                    console.error("Error fetching school IDs.");
+                });
+            }
+        });
+        $('#schoolTypeSelect').change(function () {
+            var selectedSchoolType = $(this).val();
+            $('#schoolNumberSelect').empty().append(new Option('Select a School', '')); // Clear existing options
+
+            if (selectedSchoolType) {
+                $.getJSON('/get-school-ids/' + selectedSchoolType + '/', function (response) {
+                    response.school_ids.forEach(function (schoolId) {
+                        $('#schoolNumberSelect').append(new Option(schoolId, schoolId));
+                    });
+                }).fail(function () {
+                    console.error("Error fetching school IDs.");
+                    // Optionally add a fallback option or message
+                });
+            }
+        });
+        $('#schoolTypeSelect').change(function () {
+            var selectedSchoolType = $(this).val();
+            $('#schoolNumberSelect').empty().append(new Option('Select a School', '')); // Clear existing options
+
+            if (selectedSchoolType) {
+                $.getJSON('/get-school-names/' + selectedSchoolType + '/', function (response) {
+                    response.forEach(function (school) {
+                        $('#schoolNumberSelect').append(new Option(school.school_name, school.school_number));
+                    });
+                }).fail(function () {
+                    console.error("Error fetching school names.");
+                    // Optionally add a fallback option or message
+                });
+            }
+        });
+        $('#schoolTypeSelect').change(function () {
+            var selectedSchoolType = $(this).val();
+            $('#schoolNumberSelect').empty().append(new Option('Select a School', '')); // Clear existing options
+
+            if (selectedSchoolType) {
+                $.getJSON('/get-school-names-by-type/' + selectedSchoolType + '/', function (response) {
+                    response.forEach(function (school) {
+                        $('#schoolNumberSelect').append(new Option(school.school_name, school.school_number));
+                    });
+                }).fail(function () {
+                    console.error("Error fetching school names.");
+                    // Optionally add a fallback option or message
+                });
+            }
+        });
+        $('#schoolNumberSelect').change(function () {
+            var selectedSchoolNumber = $(this).val();
+            fetchAndRenderChart(selectedSchoolNumber);
+        });
+
+        function fetchAndRenderChart(schoolNumber) {
+            $.getJSON('/school-data/' + schoolNumber, function (data) {
+                console.log("data", data);
+                
+                // Render the first chart (School Size vs. Exam Success)
+                const ctx1 = document.getElementById('schoolDataChart1').getContext('2d');
+                const chart1 = new Chart(ctx1, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'School Performance',
+                            data: data.sizes.map((size, index) => ({
+                                x: size,
+                                y: data.successRates[index]
+                            })),
+                            backgroundColor: 'rgba(0, 123, 255, 0.5)'
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: 'School Size'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Academic Success Rate (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log("Rendering First Chart...");
+                
+                // Render the second chart (Low-Income Proportion vs. Exam Success)
+                const ctx2 = document.getElementById('schoolDataChart2').getContext('2d');
+                const chart2 = new Chart(ctx2, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'School Performance',
+                            data: data.lowIncomeProportion.map((proportion, index) => ({
+                                x: proportion,
+                                y: data.successRates[index]
+                            })),
+                            backgroundColor: 'rgba(255, 0, 0, 0.5)' // Adjust color if needed
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: 'Proportion of Low-Income Students'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Academic Success Rate (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                console.log("Rendering Second Chart...");
+                console.log("Both Charts Rendered.");
+
+            }).fail(function () {
+                console.error("Error fetching school data.");
+            });
+        }
+       
+
+
+
+
+
+
+    </script>
+</body>
+</head>
+
+</html>

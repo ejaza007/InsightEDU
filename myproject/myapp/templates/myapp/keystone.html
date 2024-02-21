@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Keystone Exam Data</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f0f2f5; /* Light gray background */
+            color: #333; /* Text color */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        .scrollable-table {
+            overflow-y: auto;
+            height: 400px;
+            border: 1px solid #2575fc; /* Blue border */
+            border-radius: 10px;
+            padding: 20px;
+            width: 80%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #2575fc; /* Blue border */
+            padding: 8px;
+            text-align: left;
+            color: #2575fc; /* Blue text color */
+        }
+
+        th {
+            background-color: #2575fc; /* Blue header background color */
+            color: #fff; /* White header text color */
+        }
+    </style>
+</head>
+<body>
+    <div class="scrollable-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>School Number</th>
+                    <th>Year</th>
+                    <th>Biology Proficiency (%)</th>
+                    <th>Literature Proficiency (%)</th>
+                    <th>Algebra Proficiency (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exam in data3 %}
+                <tr>
+                    <td>{{ exam.school_number }}</td>
+                    <td>{{ exam.year }}</td>
+                    <td>{{ exam.percentage_bio_proficient }}</td>
+                    <td>{{ exam.percentage_lit_proficient }}</td>
+                    <td>{{ exam.percentage_alg_proficient }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
